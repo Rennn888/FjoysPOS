@@ -7,6 +7,13 @@ use CodeIgniter\Router\RouteCollection;
  */
 $routes->get('/', 'Home::index');
 
+// Test routes
+$routes->get('test/db', 'Test::checkDatabase');
+$routes->get('test/frontend', 'Test::testFrontend');
+
+// POS Application
+$routes->get('pos', 'Pos::mobile');
+
 // Dashboard Routes
 $routes->get('dashboard', 'Dashboard::index');
 $routes->get('dashboard/products', 'Dashboard::products');

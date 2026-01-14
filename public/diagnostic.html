@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS Diagnostic</title>
+    <style>
+        body { font-family: monospace; padding: 20px; background: #1e1e1e; color: #d4d4d4; }
+        .test { background: #252526; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { color: #4ec9b0; }
+        .error { color: #f48771; }
+        .warning { color: #dcdcaa; }
+        button { background: #007acc; color: white; border: none; padding: 10px 20px; border-radius: 3px; cursor: pointer; margin: 5px; }
+        pre { background: #1e1e1e; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>🔍 POS Diagnostic Tool</h1>
+    
+    <div class="test">
+        <h3>1. Browser Information</h3>
+        <div id="browserInfo"></div>
+    </div>
+
+    <div class="test">
+        <h3>2. Network Status</h3>
+        <div id="networkStatus"></div>
+    </div>
+
+    <div class="test">
+        <h3>3. IndexedDB Support</h3>
+        <div id="indexedDBStatus"></div>
+    </div>
+
+    <div class="test">
+        <h3>4. API Connection Test</h3>
+        <button onclick="testAPI()">Test API</button>
+        <div id="apiStatus"></div>
+    </div>
+
+    <div class="test">
+        <h3>5. Service Worker Support</h3>
+        <div id="swStatus"></div>
+    </div>
+
+    <div class="test">
+        <h3>6. Console Logs</h3>
+        <button onclick="clearLogs()">Clear Logs</button>
+        <pre id="logs"></pre>
+    </div>
+
+    <script>
+        const logs = [];
+        const originalLog = console.log;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            logs.push({ type: 'log', message: args.join(' '), time: new Date().toLocaleTimeString() });
+            updateLogs();
+            originalLog.apply(console, args);
+        };
+        
+        console.error = function(...args) {
+            logs.push({ type: 'error', message: args.join(' '), time: new Date().toLocaleTimeString() });
+            updateLogs();
+            originalError.apply(console, args);
+        };
+
+        function updateLogs() {
+            const logsEl = document.getElementById('logs');
+            logsEl.textContent = logs.map(l => `[${l.time}] ${l.type.toUpperCase()}: ${l.message}`).join('\n');
+            logsEl.scrollTop = logsEl.scrollHeight;
+        }
+
+        function clearLogs() {
+            logs.length = 0;
+            updateLogs();
+        }
+
+        // Browser Info
+        document.getElementById('browserInfo').innerHTML = `
+            <div class="success">✓ User Agent: ${navigator.userAgent}</div>
+            <div class="success">✓ Platform: ${navigator.platform}</div>
+            <div class="success">✓ Online: ${navigator.onLine}</div>
+            <div class="success">✓ Language: ${navigator.language}</div>
+        `;
+
+        // Network Status
+        function updateNetworkStatus() {
+            const status = navigator.onLine ? 
+                '<div class="success">✓ Online</div>' : 
+                '<div class="error">✗ Offline</div>';
+            document.getElementById('networkStatus').innerHTML = status;
+        }
+        updateNetworkStatus();
+        window.addEventListener('online', updateNetworkStatus);
+        window.addEventListener('offline', updateNetworkStatus);
+
+        // IndexedDB
+        if ('indexedDB' in window) {
+            document.getElementById('indexedDBStatus').innerHTML = '<div class="success">✓ IndexedDB is supported</div>';
+            
+            // Test IndexedDB
+            const request = indexedDB.open('TestDB', 1);
+            request.onsuccess = () => {
+                document.getElementById('indexedDBStatus').innerHTML += '<div class="success">✓ IndexedDB is working</div>';
+                request.result.close();
+                indexedDB.deleteDatabase('TestDB');
+            };
+            request.onerror = () => {
+                document.getElementById('indexedDBStatus').innerHTML += '<div class="error">✗ IndexedDB error: ' + request.error + '</div>';
+            };
+        } else {
+            document.getElementById('indexedDBStatus').innerHTML = '<div class="error">✗ IndexedDB not supported</div>';
+        }
+
+        // Service Worker
+        if ('serviceWorker' in navigator) {
+            document.getElementById('swStatus').innerHTML = '<div class="success">✓ Service Worker is supported</div>';
+        } else {
+            document.getElementById('swStatus').innerHTML = '<div class="error">✗ Service Worker not supported</div>';
+        }
+
+        // API Test
+        async function testAPI() {
+            const statusEl = document.getElementById('apiStatus');
+            statusEl.innerHTML = '<div class="warning">⏳ Testing API...</div>';
+            
+            const apiUrl = window.location.origin + '/api/products';
+            const apiKey = 'Fjoy3211';
+            
+            console.log('Testing API:', apiUrl);
+            
+            try {
+                const response = await fetch(apiUrl, {
+                    headers: { 'X-API-Key': apiKey }
+                });
+                
+                console.log('API Response status:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('API Response:', data);
+                    statusEl.innerHTML = `
+                        <div class="success">✓ API is working</div>
+                        <div class="success">✓ Status: ${response.status}</div>
+                        <div class="success">✓ Products: ${data.data ? data.data.length : 0}</div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    const text = await response.text();
+                    console.error('API Error:', response.status, text);
+                    statusEl.innerHTML = `
+                        <div class="error">✗ API Error</div>
+                        <div class="error">Status: ${response.status}</div>
+                        <pre>${text}</pre>
+                    `;
+                }
+            } catch (error) {
+                console.error('API Connection Error:', error);
+                statusEl.innerHTML = `
+                    <div class="error">✗ Cannot connect to API</div>
+                    <div class="error">Error: ${error.message}</div>
+                    <div class="warning">Check if server is running and accessible from this device</div>
+                `;
+            }
+        }
+
+        // Auto-test API on load
+        setTimeout(testAPI, 1000);
+    </script>
+</body>
+</html>
