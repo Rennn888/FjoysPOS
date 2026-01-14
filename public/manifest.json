@@ -1,0 +1,17 @@
+{
+  "name": "Food Stand POS",
+  "short_name": "POS",
+  "description": "Offline-first Point of Sale for Food Stand",
+  "start_url": "/pos.html",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "64x64",
+      "type": "image/x-icon"
+    }
+  ]
+}
