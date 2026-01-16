@@ -12,7 +12,10 @@ $routes->get('test/db', 'Test::checkDatabase');
 $routes->get('test/frontend', 'Test::testFrontend');
 
 // POS Application
-$routes->get('pos', 'Pos::mobile');
+$routes->get('pos', 'Pos::index');
+$routes->get('pos/diagnostic', 'Pos::diagnostic');
+$routes->get('pos/reset-counter', 'Pos::resetOrderCounter');
+$routes->post('pos/reset-counter', 'Pos::resetOrderCounter');
 
 // Dashboard Routes
 $routes->get('dashboard', 'Dashboard::index');

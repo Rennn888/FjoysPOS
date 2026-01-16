@@ -1,11 +1,11 @@
 @echo off
 echo ========================================
-echo   Food Stand POS - Starting Server
+echo   FJOY'S POS - Starting Server
 echo ========================================
 echo.
 echo Server will be accessible at:
-echo   - Local: http://localhost:8080
-echo   - Network: http://192.168.254.179:8080
+echo   - Local: http://localhost:8080/pos
+echo   - Network: http://YOUR_IP:8080/pos
 echo.
 echo Press Ctrl+C to stop the server
 echo ========================================
