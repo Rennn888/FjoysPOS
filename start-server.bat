@@ -1,7 +1,9 @@
 @echo off
 echo ========================================
-echo   FJOY'S POS - Starting Server
+echo   FJOY'S POS - Production Server
 echo ========================================
+echo.
+echo PRODUCTION MODE ACTIVE
 echo.
 echo Server will be accessible at:
 echo   - Local: http://localhost:8080/pos

@@ -664,7 +664,6 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('POS App Starting...');
             await loadProducts();
             loadActiveOrders();
             setupEventListeners();
@@ -673,33 +672,20 @@
 
         // Load Products
         async function loadProducts() {
-            console.log('Loading products from API...');
-            console.log('API_BASE_URL:', API_BASE_URL);
-            console.log('API_KEY:', API_KEY);
-            
             try {
                 const url = `${API_BASE_URL}/api/products`;
-                console.log('Fetching from:', url);
-                
                 const response = await fetch(url, {
                     headers: { 'X-API-Key': API_KEY }
                 });
                 
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
-                
                 if (response.ok) {
                     const data = await response.json();
-                    console.log('Response data:', data);
                     products = data.data || [];
-                    console.log('Products loaded:', products.length);
                 } else {
-                    const errorText = await response.text();
-                    console.error('API Error:', response.status, errorText);
+                    console.error('API Error:', response.status);
                 }
             } catch (error) {
                 console.error('Failed to load products:', error);
-                console.error('Error details:', error.message);
             }
             
             renderMenu();
@@ -1041,10 +1027,10 @@
                 });
                 
                 if (response.ok) {
-                    console.log('Transaction synced successfully');
+                    // Transaction synced successfully
                 }
             } catch (error) {
-                console.log('Failed to sync transaction:', error);
+                // Failed to sync transaction - will retry when online
             }
             
             addToActiveOrders(orderNumber, cart, total);
@@ -1218,8 +1204,6 @@
             window.addEventListener('online', updateOnlineStatus);
             window.addEventListener('offline', updateOnlineStatus);
         }
-
-        console.log('POS App Loaded');
     </script>
 </body>
 </html>

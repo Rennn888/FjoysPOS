@@ -10,11 +10,11 @@ class ApiAuthFilter implements FilterInterface
 {
     public function before(RequestInterface $request, $arguments = null)
     {
-        // Simple API key authentication
+        // API key authentication
         $apiKey = $request->getHeaderLine('X-API-Key');
-        $validKey = getenv('API_KEY') ?: 'your-secret-api-key-change-this';
+        $validKey = getenv('API_KEY');
         
-        if ($apiKey !== $validKey) {
+        if (empty($validKey) || $apiKey !== $validKey) {
             return service('response')
                 ->setStatusCode(401)
                 ->setJSON([

@@ -95,6 +95,22 @@ class FjoysMenuSeeder extends Seeder
                 'created_at' => date('Y-m-d H:i:s'),
             ],
             
+            // SANDWICHES
+            [
+                'name' => 'Chicken Burger',
+                'price' => 0.00, // Price to be determined
+                'category' => 'Sandwiches',
+                'is_active' => 1,
+                'created_at' => date('Y-m-d H:i:s'),
+            ],
+            [
+                'name' => 'Hungarian Sausage in a Bun',
+                'price' => 0.00, // Price to be determined
+                'category' => 'Sandwiches',
+                'is_active' => 1,
+                'created_at' => date('Y-m-d H:i:s'),
+            ],
+            
             // DRINKS
             [
                 'name' => 'Blue Lemonade - 16oz',
