@@ -105,7 +105,7 @@ class FjoysMenuSeeder extends Seeder
             ],
             [
                 'name' => 'Hungarian Sausage in a Bun',
-                'price' => 0.00, // Price to be determined
+                'price' => 69.00, // Price to be determined
                 'category' => 'Sandwiches',
                 'is_active' => 1,
                 'created_at' => date('Y-m-d H:i:s'),

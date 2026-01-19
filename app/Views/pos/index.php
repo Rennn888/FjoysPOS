@@ -642,7 +642,7 @@
     <script>
         // Configuration - Dynamic base URL that works on mobile
         const API_BASE_URL = window.location.origin;
-        const API_KEY = '<?= getenv('API_KEY') ?: 'Fjoy3211' ?>';
+        const API_KEY = '<?= getenv('API_KEY') ?>';
 
         // State
         let cart = [];
@@ -657,7 +657,7 @@
         const WING_FLAVORS = [
             'Salted Egg', 'Garlic Parmesan', 'Barbecue Sauce', 'Soy Garlic',
             'Korean Flavor', 'Teriyaki', 'Honey Butter', 'Lemon Glaze',
-            'Sweet Chili', 'Buffalo'
+            'Sweet Chili', 'Buffalo', 'Hot Chili'
         ];
 
         const FRIES_FLAVORS = ['Cheese', 'Sour Cream', 'Barbecue'];
