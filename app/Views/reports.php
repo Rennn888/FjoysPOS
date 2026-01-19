@@ -38,7 +38,7 @@
                 <a href="<?= base_url('dashboard') ?>">Dashboard</a>
                 <a href="<?= base_url('dashboard/products') ?>">Products</a>
                 <a href="<?= base_url('dashboard/reports') ?>">Reports</a>
-                <a href="<?= base_url('pos.html') ?>" target="_blank">Open POS →</a>
+                <a href="<?= base_url('pos') ?>" target="_blank">Open POS →</a>
             </div>
         </div>
 
@@ -68,7 +68,7 @@
                 <div class="summary">
                     <div class="summary-card">
                         <div class="summary-label">Total Sales</div>
-                        <div class="summary-value">$<?= number_format($totalSales, 2) ?></div>
+                        <div class="summary-value">₱<?= number_format($totalSales, 2) ?></div>
                     </div>
                     <div class="summary-card">
                         <div class="summary-label">Transactions</div>
@@ -76,9 +76,41 @@
                     </div>
                     <div class="summary-card">
                         <div class="summary-label">Average Sale</div>
-                        <div class="summary-value">$<?= number_format($avgTransaction, 2) ?></div>
+                        <div class="summary-value">₱<?= number_format($avgTransaction, 2) ?></div>
                     </div>
                 </div>
+            </div>
+
+            <div class="section">
+                <h2>Item Sales Breakdown</h2>
+                <?php if (empty($itemSalesStats)): ?>
+                    <p style="color: #6b7280; padding: 20px; text-align: center;">No items sold in this period.</p>
+                <?php else: ?>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Item Name</th>
+                                <th style="text-align: right;">Quantity Sold</th>
+                                <th style="text-align: right;">Total Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($itemSalesStats as $item): ?>
+                                <tr>
+                                    <td>
+                                        <span style="font-weight: 600; color: #1f2937;"><?= esc($item['name']) ?></span>
+                                    </td>
+                                    <td style="text-align: right; font-weight: bold; color: #dc2626;">
+                                        <?= number_format($item['quantity']) ?>
+                                    </td>
+                                    <td style="text-align: right;">
+                                        ₱<?= number_format($item['total'], 2) ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                <?php endif; ?>
             </div>
 
             <div class="section">
@@ -100,7 +132,7 @@
                                 <td><?= date('M d, Y H:i', strtotime($tx['transaction_date'])) ?></td>
                                 <td><?= esc($tx['transaction_id']) ?></td>
                                 <td><?= count($items) ?> items</td>
-                                <td>$<?= number_format($tx['total'], 2) ?></td>
+                                <td>₱<?= number_format($tx['total'], 2) ?></td>
                                 <td><?= ucfirst($tx['payment_method']) ?></td>
                             </tr>
                         <?php endforeach; ?>

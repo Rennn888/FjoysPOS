@@ -21,6 +21,8 @@ class Dashboard extends BaseController
         $data = [
             'products' => $this->productModel->findAll(),
             'todaySales' => $this->transactionModel->getDailySales(),
+            'monthlySales' => $this->transactionModel->getMonthlySales(),
+            'itemSalesStats' => $this->transactionModel->getItemSalesStats(), // Defaults to today
             'recentTransactions' => $this->transactionModel
                 ->orderBy('transaction_date', 'DESC')
                 ->limit(10)
@@ -46,6 +48,7 @@ class Dashboard extends BaseController
 
         $data = [
             'transactions' => $this->transactionModel->getSalesReport($startDate, $endDate),
+            'itemSalesStats' => $this->transactionModel->getItemSalesStats($startDate, $endDate),
             'start_date' => $startDate,
             'end_date' => $endDate
         ];

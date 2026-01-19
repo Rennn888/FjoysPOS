@@ -31,7 +31,7 @@
                 <a href="<?= base_url('dashboard') ?>">Dashboard</a>
                 <a href="<?= base_url('dashboard/products') ?>">Products</a>
                 <a href="<?= base_url('dashboard/reports') ?>">Reports</a>
-                <a href="<?= base_url('pos.html') ?>" target="_blank">Open POS →</a>
+                <a href="<?= base_url('pos') ?>" target="_blank">Open POS →</a>
             </div>
         </div>
 
@@ -57,7 +57,7 @@
                                 <td><?= $product['id'] ?></td>
                                 <td><?= esc($product['name']) ?></td>
                                 <td><?= esc($product['category']) ?></td>
-                                <td>$<?= number_format($product['price'], 2) ?></td>
+                                <td>₱<?= number_format($product['price'], 2) ?></td>
                                 <td>
                                     <?php if ($product['is_active']): ?>
                                         <span class="badge badge-active">Active</span>

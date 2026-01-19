@@ -548,8 +548,11 @@
         <div class="header">
             <h1>🍗 FJOY'S POS</h1>
             <div class="status">
-                <button class="orders-btn" onclick="window.location.href='<?= base_url('pos/reset-counter') ?>'" style="margin-right: 5px;">
+                <button class="orders-btn" onclick="window.location.href='<?= base_url('pos/reset-counter') ?>'" style="margin-right: 5px;" title="Reset Counter">
                     🔄
+                </button>
+                <button class="orders-btn" onclick="openSummaryModal()" style="margin-right: 5px;" title="Daily Summary">
+                    📊
                 </button>
                 <button class="orders-btn" onclick="toggleActiveOrders()">
                     📋 Orders (<span id="orderCount">0</span>)
@@ -639,6 +642,34 @@
         </div>
     </div>
 
+    <!-- Daily Summary Modal -->
+    <div class="modal" id="summaryModal">
+        <div class="modal-content">
+            <div class="modal-title">DAILY SUMMARY</div>
+            <div class="input-group">
+                <label>Total Sales Today:</label>
+                <div style="font-size: 32px; font-weight: 700; color: #dc2626; margin-bottom: 20px;">
+                    <span id="summaryTotal">₱0.00</span>
+                </div>
+            </div>
+            
+            <div class="input-group">
+                <label style="margin-bottom: 15px; border-bottom: 2px solid #e5e7eb; padding-bottom: 5px;">Items Sold</label>
+                <div id="summaryItems" style="max-height: 300px; overflow-y: auto;">
+                    <!-- Items will be injected here -->
+                </div>
+            </div>
+
+            <div class="action-buttons" style="margin-top: 20px; flex-direction: column;">
+                <p style="text-align: center; color: #6b7280; font-size: 13px; margin-bottom: 10px;">
+                    Take a photo of this screen for your records.
+                </p>
+                <button class="btn btn-pay" onclick="resetDailySales()">RESET FOR TOMORROW</button>
+                <button class="btn btn-clear" onclick="closeSummaryModal()" style="margin-top: 10px;">Close</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         // Configuration - Dynamic base URL that works on mobile
         const API_BASE_URL = window.location.origin;
@@ -652,6 +683,12 @@
         let selectedFlavors = [];
         let activeOrders = [];
         let orderCounter = 1;
+        
+        // Simple Local Daily Stats
+        let dailySummary = {
+            totalSales: 0,
+            itemsSold: {}
+        };
 
         // Flavor options
         const WING_FLAVORS = [
@@ -664,11 +701,84 @@
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
+            loadDailyStats(); // Load local stats
             await loadProducts();
             loadActiveOrders();
             setupEventListeners();
             updateOnlineStatus();
+
+            // Background sync every 30 seconds
+            setInterval(syncTransactions, 30000);
         });
+
+        // --- Daily Summary Logic ---
+
+        function loadDailyStats() {
+            const saved = localStorage.getItem('dailySummary');
+            if (saved) {
+                dailySummary = JSON.parse(saved);
+            }
+        }
+
+        function saveDailyStats() {
+            localStorage.setItem('dailySummary', JSON.stringify(dailySummary));
+        }
+
+        function updateDailyStats(cart, total) {
+            dailySummary.totalSales += total;
+            
+            cart.forEach(item => {
+                const name = item.name; // Keep it simple, just name for now
+                if (!dailySummary.itemsSold[name]) {
+                    dailySummary.itemsSold[name] = 0;
+                }
+                dailySummary.itemsSold[name] += item.quantity;
+            });
+            
+            saveDailyStats();
+        }
+
+        function openSummaryModal() {
+            document.getElementById('summaryTotal').textContent = `₱${dailySummary.totalSales.toFixed(2)}`;
+            
+            const container = document.getElementById('summaryItems');
+            if (Object.keys(dailySummary.itemsSold).length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#9ca3af;">No sales yet today.</div>';
+            } else {
+                let html = '';
+                // Sort by quantity sold
+                const sortedItems = Object.entries(dailySummary.itemsSold)
+                    .sort(([,a], [,b]) => b - a);
+                    
+                sortedItems.forEach(([name, qty]) => {
+                    html += `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px;">
+                            <span>${name}</span>
+                            <span style="font-weight: 700; color: #dc2626;">${qty} sold</span>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            }
+            
+            document.getElementById('summaryModal').classList.add('active');
+        }
+
+        function closeSummaryModal() {
+            document.getElementById('summaryModal').classList.remove('active');
+        }
+
+        function resetDailySales() {
+            if (confirm('Are you sure you want to RESET sales for tomorrow?\n\nThis will clear the Total Sales and Item Counts to zero.')) {
+                dailySummary = {
+                    totalSales: 0,
+                    itemsSold: {}
+                };
+                saveDailyStats();
+                closeSummaryModal();
+                alert('Daily summary has been reset for a new day! ☀️');
+            }
+        }
 
         // Load Products
         async function loadProducts() {
@@ -1016,6 +1126,50 @@
                 transaction_date: new Date().toISOString()
             };
             
+            // 1. Store locally first (Persistence)
+            saveTransactionLocally(transaction);
+            
+            // 2. Add to active orders (UI)
+            addToActiveOrders(orderNumber, cart, total);
+            
+            // 3. Attempt sync immediately (Background)
+            syncTransactions();
+            
+            // 4. Update Daily Stats (Local)
+            updateDailyStats(cart, total);
+            
+            alert(`Payment Complete!\n\nOrder #${orderNumber}\nTotal: ₱${total.toFixed(2)}\nCash: ₱${cashReceived.toFixed(2)}\nChange: ₱${change.toFixed(2)}`);
+            
+            cart = [];
+            renderCart();
+            closePaymentModal();
+        }
+
+        // --- Offline Sync Logic ---
+
+        // Save transaction to local queue
+        function saveTransactionLocally(transaction) {
+            let pending = getPendingTransactions();
+            pending.push(transaction);
+            localStorage.setItem('pendingTransactions', JSON.stringify(pending));
+            updateSyncStatus();
+        }
+
+        function getPendingTransactions() {
+            const saved = localStorage.getItem('pendingTransactions');
+            return saved ? JSON.parse(saved) : [];
+        }
+
+        // Sync Pending Transactions
+        async function syncTransactions() {
+            if (!navigator.onLine) return;
+
+            const pending = getPendingTransactions();
+            if (pending.length === 0) return;
+
+            console.log(`Attempting to sync ${pending.length} transactions...`);
+            updateSyncStatus('Syncing...');
+
             try {
                 const response = await fetch(`${API_BASE_URL}/api/transactions/sync`, {
                     method: 'POST',
@@ -1023,23 +1177,56 @@
                         'Content-Type': 'application/json',
                         'X-API-Key': API_KEY
                     },
-                    body: JSON.stringify({ transactions: [transaction] })
+                    body: JSON.stringify({ transactions: pending })
                 });
-                
+
                 if (response.ok) {
-                    // Transaction synced successfully
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        // Remove successfully synced transactions
+                        const syncedIds = result.synced_ids || [];
+                        const failedIds = result.failed_ids || [];
+                        
+                        // Keep only those that were NOT synced and NOT failed (unless failed means retryable)
+                        // For now, we assume if the server processed it (success/fail), we remove it from queue to avoid infinite loops on bad data.
+                        // But strictly, we only remove synced ones.
+                        
+                        // Actually, if duplicate, server returns success. 
+                        // If error 500, we keep. 
+                        
+                        if (syncedIds.length > 0) {
+                             const remaining = pending.filter(t => !syncedIds.includes(t.transaction_id));
+                             localStorage.setItem('pendingTransactions', JSON.stringify(remaining));
+                             console.log(`Synced ${syncedIds.length} transactions.`);
+                        }
+                    }
                 }
             } catch (error) {
-                // Failed to sync transaction - will retry when online
+                console.error('Sync failed:', error);
             }
             
-            addToActiveOrders(orderNumber, cart, total);
+            updateSyncStatus();
+        }
+
+        function updateSyncStatus(msg) {
+            const pending = getPendingTransactions();
+            const statusDot = document.getElementById('statusDot');
+            const statusText = document.getElementById('statusText');
             
-            alert(`Payment Complete!\n\nOrder #${orderNumber}\nTotal: ₱${total.toFixed(2)}\nCash: ₱${cashReceived.toFixed(2)}\nChange: ₱${change.toFixed(2)}`);
-            
-            cart = [];
-            renderCart();
-            closePaymentModal();
+            if (msg) {
+                 statusText.textContent = msg;
+                 statusDot.className = 'status-dot'; // yellow?
+                 statusDot.style.background = '#f59e0b';
+            } else if (pending.length > 0) {
+                 statusText.textContent = `Online (${pending.length} Unsynced)`;
+                 statusDot.className = 'status-dot';
+                 statusDot.style.background = '#f59e0b'; // Orange for pending
+            } else {
+                 statusText.textContent = navigator.onLine ? 'Online' : 'Offline';
+                 statusDot.className = 'status-dot';
+                 statusDot.style.background = navigator.onLine ? '#10b981' : '#dc2626;'; 
+            }
         }
 
         // Get Device ID
@@ -1166,15 +1353,10 @@
         // Update Online Status
         function updateOnlineStatus() {
             isOnline = navigator.onLine;
-            const statusDot = document.getElementById('statusDot');
-            const statusText = document.getElementById('statusText');
+            updateSyncStatus();
             
             if (isOnline) {
-                statusDot.classList.remove('offline');
-                statusText.textContent = 'Online';
-            } else {
-                statusDot.classList.add('offline');
-                statusText.textContent = 'Offline';
+                syncTransactions();
             }
         }
 

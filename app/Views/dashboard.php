@@ -34,14 +34,18 @@
                 <a href="<?= base_url('dashboard') ?>">Dashboard</a>
                 <a href="<?= base_url('dashboard/products') ?>">Products</a>
                 <a href="<?= base_url('dashboard/reports') ?>">Reports</a>
-                <a href="<?= base_url('pos.html') ?>" target="_blank">Open POS →</a>
+                <a href="<?= base_url('pos') ?>" target="_blank">Open POS →</a>
             </div>
         </div>
 
         <div class="stats">
             <div class="stat-card">
                 <div class="stat-label">Today's Sales</div>
-                <div class="stat-value">$<?= number_format($todaySales['total_sales'] ?? 0, 2) ?></div>
+                <div class="stat-value">₱<?= number_format($todaySales['total_sales'] ?? 0, 2) ?></div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Monthly Sales</div>
+                <div class="stat-value">₱<?= number_format($monthlySales['total_sales'] ?? 0, 2) ?></div>
             </div>
             <div class="stat-card">
                 <div class="stat-label">Today's Transactions</div>
@@ -51,6 +55,43 @@
                 <div class="stat-label">Total Products</div>
                 <div class="stat-value"><?= count($products) ?></div>
             </div>
+        </div>
+
+        <div class="section">
+            <h2>🔥 Top Selling Items (Today)</h2>
+            <?php if (empty($itemSalesStats)): ?>
+                <p style="color: #6b7280; padding: 20px; text-align: center;">No items sold today yet.</p>
+            <?php else: ?>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Item Name</th>
+                            <th style="text-align: right;">Quantity Sold</th>
+                            <th style="text-align: right;">Total Revenue</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach (array_slice($itemSalesStats, 0, 5) as $item): ?>
+                            <tr>
+                                <td>
+                                    <span style="font-weight: 600; color: #1f2937;"><?= esc($item['name']) ?></span>
+                                </td>
+                                <td style="text-align: right; font-weight: bold; color: #dc2626;">
+                                    <?= number_format($item['quantity']) ?>
+                                </td>
+                                <td style="text-align: right;">
+                                    ₱<?= number_format($item['total'], 2) ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+                <?php if (count($itemSalesStats) > 5): ?>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <a href="<?= base_url('dashboard/reports') ?>" style="color: #2563eb; text-decoration: none; font-size: 14px;">View Full Item Report →</a>
+                    </div>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
 
         <div class="section">
@@ -73,7 +114,7 @@
                             <tr>
                                 <td><?= esc($tx['transaction_id']) ?></td>
                                 <td><?= date('M d, Y H:i', strtotime($tx['transaction_date'])) ?></td>
-                                <td>$<?= number_format($tx['total'], 2) ?></td>
+                                <td>₱<?= number_format($tx['total'], 2) ?></td>
                                 <td><?= ucfirst($tx['payment_method']) ?></td>
                                 <td><?= $tx['synced_at'] ? '✓ Synced' : '⏳ Pending' ?></td>
                             </tr>
@@ -86,7 +127,7 @@
         <div class="section">
             <h2>Quick Actions</h2>
             <p style="margin-bottom: 15px;">
-                <a href="<?= base_url('pos.html') ?>" class="btn" target="_blank">Open POS Application</a>
+                <a href="<?= base_url('pos') ?>" class="btn" target="_blank">Open POS Application</a>
                 <a href="<?= base_url('dashboard/reports') ?>" class="btn">View Reports</a>
             </p>
         </div>
