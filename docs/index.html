@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="theme-color" content="#dc2626">
     <title>Fjoy's POS</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+    <link rel="apple-touch-icon" href="icons/icon.svg">
     <style>
         * {
             margin: 0;
@@ -548,7 +551,7 @@
         <div class="header">
             <h1>🍗 FJOY'S POS</h1>
             <div class="status">
-                <button class="orders-btn" onclick="window.location.href='<?= base_url('pos/reset-counter') ?>'" style="margin-right: 5px;" title="Reset Counter">
+                <button class="orders-btn" onclick="resetOrderCounter()" style="margin-right: 5px;" title="Reset Counter">
                     🔄
                 </button>
                 <button class="orders-btn" onclick="openSummaryModal()" style="margin-right: 5px;" title="Daily Summary">
@@ -558,7 +561,7 @@
                     📋 Orders (<span id="orderCount">0</span>)
                 </button>
                 <span class="status-dot" id="statusDot"></span>
-                <span id="statusText">Online</span>
+                <span id="statusText">Offline</span>
             </div>
         </div>
 
@@ -671,13 +674,46 @@
     </div>
 
     <script>
-        // Configuration - Dynamic base URL that works on mobile
-        const API_BASE_URL = window.location.origin;
-        const API_KEY = '<?= getenv('API_KEY') ?>';
+        // Configuration
+        const API_BASE_URL = ''; // No Backend for static hosting
+        const API_KEY = 'static-demo';
+
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js')
+                    .then(reg => console.log('SW Registered!', reg))
+                    .catch(err => console.error('SW Failed:', err));
+            });
+        }
 
         // State
         let cart = [];
-        let products = [];
+        // Hardcoded Products for Offline Usage
+        let products = [
+            { id: 1, name: 'Wing Meal (2 pcs + Rice)', price: 79.00, category: 'Rice Meals' },
+            { id: 2, name: 'Double Wing Meal (4 pcs + Rice)', price: 129.00, category: 'Rice Meals' },
+            { id: 3, name: 'Wingmates (6 pcs)', price: 159.00, category: 'Ala Carte Wings' },
+            { id: 4, name: 'Triple Feast (12 pcs)', price: 299.00, category: 'Ala Carte Wings' },
+            { id: 5, name: 'Wing Fiesta (18 pcs)', price: 419.00, category: 'Ala Carte Wings' },
+            { id: 6, name: 'Hungarian Sausage w/ rice', price: 59.00, category: 'Other Favorites' },
+            { id: 7, name: 'Crispy Fries - S', price: 35.00, category: 'Other Favorites' },
+            { id: 8, name: 'Crispy Fries - M', price: 55.00, category: 'Other Favorites' },
+            { id: 9, name: 'Crispy Fries - L', price: 75.00, category: 'Other Favorites' },
+            { id: 10, name: 'Chicky Bites - 6pcs', price: 69.00, category: 'Other Favorites' },
+            { id: 11, name: 'Chicky Bites - 12pcs', price: 119.00, category: 'Other Favorites' },
+            { id: 12, name: 'Hungarian Sausage in a Bun', price: 69.00, category: 'Sandwiches' },
+            { id: 13, name: 'Blue Lemonade - 16oz', price: 20.00, category: 'Drinks' },
+            { id: 14, name: 'Blue Lemonade - 22oz', price: 30.00, category: 'Drinks' },
+            { id: 15, name: 'Cucumber Juice - 16oz', price: 20.00, category: 'Drinks' },
+            { id: 16, name: 'Cucumber Juice - 22oz', price: 30.00, category: 'Drinks' },
+            { id: 17, name: 'Garlic Mayo', price: 20.00, category: 'Dips' },
+            { id: 18, name: 'Cheese Dip', price: 20.00, category: 'Dips' },
+        ];
+        
+        // Sorting products to be sure
+        products.sort((a,b) => a.category.localeCompare(b.category));
+
         let isOnline = navigator.onLine;
         let pendingProduct = null;
         let selectedFlavors = [];
@@ -702,13 +738,13 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             loadDailyStats(); // Load local stats
-            await loadProducts();
+            renderMenu(); // Render hardcoded menu
             loadActiveOrders();
             setupEventListeners();
             updateOnlineStatus();
 
-            // Background sync every 30 seconds
-            setInterval(syncTransactions, 30000);
+            // Background sync logic (disabled for static demo but kept for structure)
+            // setInterval(syncTransactions, 30000);
         });
 
         // --- Daily Summary Logic ---
@@ -728,7 +764,7 @@
             dailySummary.totalSales += total;
             
             cart.forEach(item => {
-                const name = item.name; // Keep it simple, just name for now
+                const name = item.name;
                 if (!dailySummary.itemsSold[name]) {
                     dailySummary.itemsSold[name] = 0;
                 }
@@ -780,43 +816,9 @@
             }
         }
 
-        // Load Products
-        async function loadProducts() {
-            try {
-                const url = `${API_BASE_URL}/api/products`;
-                const response = await fetch(url, {
-                    headers: { 'X-API-Key': API_KEY }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    products = data.data || [];
-                } else {
-                    console.error('API Error:', response.status);
-                }
-            } catch (error) {
-                console.error('Failed to load products:', error);
-            }
-            
-            renderMenu();
-        }
-
-        // Render Menu
+        // Render Menu (From Static Data)
         function renderMenu() {
             const menuSection = document.getElementById('menuSection');
-            
-            if (products.length === 0) {
-                menuSection.innerHTML = `
-                    <div class="category-title">No products available</div>
-                    <div style="padding: 20px; text-align: center; color: #6b7280;">
-                        <p>Unable to load menu items.</p>
-                        <button onclick="location.reload()" style="margin-top: 20px; padding: 10px 20px; background: #dc2626; color: white; border: none; border-radius: 6px; cursor: pointer;">
-                            Retry
-                        </button>
-                    </div>
-                `;
-                return;
-            }
             
             const categories = {};
             products.forEach(product => {
@@ -826,6 +828,7 @@
             });
             
             let html = '';
+            // Custom order for categories if needed, or alphabetical
             Object.keys(categories).sort().forEach(category => {
                 html += `<div class="category-title">${category}</div>`;
                 html += '<div class="menu-grid">';
@@ -1132,11 +1135,8 @@
             // 2. Add to active orders (UI)
             addToActiveOrders(orderNumber, cart, total);
             
-            // 3. Attempt sync immediately (Background)
-            syncTransactions();
-            
-            // 4. Update Daily Stats (Local) REMOVED - moved to markOrderDone
-            // updateDailyStats(cart, total);
+            // 3. Attempt sync immediately (Background) - Will fail in static, but safe
+            // syncTransactions();
             
             alert(`Payment Complete!\n\nOrder #${orderNumber}\nTotal: ₱${total.toFixed(2)}\nCash: ₱${cashReceived.toFixed(2)}\nChange: ₱${change.toFixed(2)}`);
             
@@ -1162,51 +1162,8 @@
 
         // Sync Pending Transactions
         async function syncTransactions() {
-            if (!navigator.onLine) return;
-
-            const pending = getPendingTransactions();
-            if (pending.length === 0) return;
-
-            console.log(`Attempting to sync ${pending.length} transactions...`);
-            updateSyncStatus('Syncing...');
-
-            try {
-                const response = await fetch(`${API_BASE_URL}/api/transactions/sync`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-API-Key': API_KEY
-                    },
-                    body: JSON.stringify({ transactions: pending })
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    
-                    if (result.success) {
-                        // Remove successfully synced transactions
-                        const syncedIds = result.synced_ids || [];
-                        const failedIds = result.failed_ids || [];
-                        
-                        // Keep only those that were NOT synced and NOT failed (unless failed means retryable)
-                        // For now, we assume if the server processed it (success/fail), we remove it from queue to avoid infinite loops on bad data.
-                        // But strictly, we only remove synced ones.
-                        
-                        // Actually, if duplicate, server returns success. 
-                        // If error 500, we keep. 
-                        
-                        if (syncedIds.length > 0) {
-                             const remaining = pending.filter(t => !syncedIds.includes(t.transaction_id));
-                             localStorage.setItem('pendingTransactions', JSON.stringify(remaining));
-                             console.log(`Synced ${syncedIds.length} transactions.`);
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Sync failed:', error);
-            }
-            
-            updateSyncStatus();
+            // Disabled in static demo
+            return;
         }
 
         function updateSyncStatus(msg) {
@@ -1219,13 +1176,14 @@
                  statusDot.className = 'status-dot'; // yellow?
                  statusDot.style.background = '#f59e0b';
             } else if (pending.length > 0) {
-                 statusText.textContent = `Online (${pending.length} Unsynced)`;
+                // In static mode, we just show "Offline Mode" essentially
+                 statusText.textContent = `Offline Mode (${pending.length} saved)`;
                  statusDot.className = 'status-dot';
-                 statusDot.style.background = '#f59e0b'; // Orange for pending
+                 statusDot.style.background = '#f59e0b'; 
             } else {
-                 statusText.textContent = navigator.onLine ? 'Online' : 'Offline';
+                 statusText.textContent = 'App Ready (Offline)';
                  statusDot.className = 'status-dot';
-                 statusDot.style.background = navigator.onLine ? '#10b981' : '#dc2626;'; 
+                 statusDot.style.background = '#10b981'; 
             }
         }
 
@@ -1363,10 +1321,6 @@
         function updateOnlineStatus() {
             isOnline = navigator.onLine;
             updateSyncStatus();
-            
-            if (isOnline) {
-                syncTransactions();
-            }
         }
 
         // Setup Event Listeners
